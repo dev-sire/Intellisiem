@@ -1,3 +1,6 @@
+
+![SIEM GROQ](https://df6m0u2ovo2fu.cloudfront.net/images/documentation-english/how-to-upload-and-insert-an-image.png)
+
 In my latest project, I developed an **AI-powered, real-time Security Information and Event Management (SIEM) system**. Leveraging **Convolutional Neural Networks (CNN)**, **Natural Language Processing (NLP)**, and advanced infrastructure components, this system provides a robust security solution that detects, analyzes, and responds to threats in real-time.
 
 **Technologies & Highlights:**
