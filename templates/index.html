@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIEM Dashboard</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Socket.io -->
+    <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-900">
+    <!-- Navbar -->
+    <nav class="bg-gray-800 text-white">
+        <div class="container mx-auto px-4 py-4">
+            <a class="text-xl font-semibold" href="#">SIEM Dashboard</a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Systeminformationen -->
+            <div class="bg-white shadow-md rounded-lg p-6">
+                <h5 class="text-xl font-semibold mb-4">Systeminformationen</h5>
+                <ul id="system-info" class="space-y-2">
+                    <!-- Dynamische Inhalte von fetchSystemInfo() -->
+                </ul>
+            </div>
+
+            <!-- System Metriken Charts -->
+            <div class="bg-white shadow-md rounded-lg p-6">
+                <h5 class="text-xl font-semibold mb-4">System Metriken</h5>
+                <canvas id="cpuChart" height="100"></canvas>
+                <div class="grid grid-cols-2 gap-4 mt-6 justify-items-center">
+                    <canvas id="memoryChart" width="352" height="200" style="box-sizing: border-box; height: 200px;"></canvas>
+                    <canvas id="diskChart" width="352" height="200" style="box-sizing: border-box; height: 200px;"></canvas>
+                </div>
+                
+            </div>
+
+            <!-- AI Chat -->
+            <div class="bg-white shadow-md rounded-lg p-6">
+                <h5 class="text-xl font-semibold mb-4">AI Chat</h5>
+                <div class="ai-chat-box h-64 overflow-y-auto bg-gray-50 p-4 rounded-md" id="chat-box">
+                    <div class="text-gray-500">Chatverlauf</div>
+                </div>
+                <div class="mt-4">
+                    <input type="text" class="w-full border border-gray-300 rounded-md p-2" id="chat-input" placeholder="Nachricht eingeben...">
+                    <button class="w-full bg-blue-500 text-white py-2 mt-2 rounded-md" onclick="sendMessage()">Senden</button>
+                </div>
+            </div>
+        </div>
+
+                <!-- Logs von verschiedenen Quellen -->
+        <div class="bg-white shadow-md rounded-lg p-6 mt-6">
+            <h5 class="text-xl font-semibold mb-4">Ereignisprotokolle</h5>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm text-left">
+                    <thead class="border-b">
+                        <tr>
+                            <th class="px-4 py-2">Quelle</th>
+                            <th class="px-4 py-2">Zeit</th>
+                            <th class="px-4 py-2">Nachricht</th>
+                            <th class="px-4 py-2">Schweregrad</th>
+                        </tr>
+                    </thead>
+                    <tbody id="event-logs">
+                        <!-- Dynamische Inhalte -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+            <!-- Netzwerkpakete -->
+            <div class="bg-white shadow-md rounded-lg p-6">
+                <h5 class="text-xl font-semibold mb-4">Netzwerkpakete</h5>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm text-left">
+                        <thead class="border-b">
+                            <tr>
+                                <th class="px-4 py-2">IP-Adresse</th>
+                                <th class="px-4 py-2">Quelle</th>
+                                <th class="px-4 py-2">Details</th>
+                                <th class="px-4 py-2">Blacklisted</th>
+                                <th class="px-4 py-2">Angriffe</th>
+                            </tr>
+                        </thead>
+                        <tbody id="network-requests">
+                            <!-- Dynamische Inhalte -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Paginierungsknöpfe -->
+                <div class="flex justify-between mt-4">
+                    <button class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md" id="network-prev">Vorherige</button>
+                    <button class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md" id="network-next">Nächste</button>
+                </div>
+            </div>
+
+            <!-- System Logs -->
+            <div class="bg-white shadow-md rounded-lg p-6">
+                <h5 class="text-xl font-semibold mb-4">System Logs</h5>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm text-left">
+                        <thead class="border-b">
+                            <tr>
+                                <th class="px-4 py-2">Zeit</th>
+                                <th class="px-4 py-2">Log</th>
+                            </tr>
+                        </thead>
+                        <tbody id="log-list">
+                            <!-- Dynamische Inhalte -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Paginierungsknöpfe -->
+                <div class="flex justify-between mt-4">
+                    <button class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md" id="logs-prev">Vorherige</button>
+                    <button class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md" id="logs-next">Nächste</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Chart.js Metriken Update -->
+    <script>
+      const cpuChartCtx = document.getElementById('cpuChart').getContext('2d');
+        const memoryChartCtx = document.getElementById('memoryChart').getContext('2d');
+        const diskChartCtx = document.getElementById('diskChart').getContext('2d');
+
+        // CPU Chart bleibt als Linienchart
+        const cpuChart = new Chart(cpuChartCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{ label: 'CPU Usage (%)', data: [], borderColor: 'rgb(75, 192, 192)', tension: 0.1 }]
+            },
+            options: { scales: { y: { beginAtZero: true, max: 100 } } }
+        });
+
+        // Memory Chart als Doughnut
+        const memoryChart = new Chart(memoryChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Used', 'Available'],
+                datasets: [{
+                    data: [0, 100], // Initialwerte
+                    backgroundColor: ['rgb(54, 162, 235)', 'rgb(200, 200, 200)'],
+                }]
+            },
+            options: {
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.raw + '%';
+                            }
+                        }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        // Disk Chart als Doughnut
+        const diskChart = new Chart(diskChartCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Used', 'Available'],
+                datasets: [{
+                    data: [0, 100], // Initialwerte
+                    backgroundColor: ['rgb(255, 99, 132)', 'rgb(200, 200, 200)'],
+                }]
+            },
+            options: {
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.raw + '%';
+                            }
+                        }
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+
+        function updateCharts(cpu, memory, disk) {
+            const timeLabel = new Date().toLocaleTimeString();
+
+            // CPU Chart aktualisieren
+            cpuChart.data.labels.push(timeLabel);
+            cpuChart.data.datasets[0].data.push(cpu);
+            if (cpuChart.data.labels.length > 20) cpuChart.data.labels.shift();
+            if (cpuChart.data.datasets[0].data.length > 20) cpuChart.data.datasets[0].data.shift();
+            cpuChart.update();
+
+            // Memory Chart aktualisieren
+            memoryChart.data.datasets[0].data = [memory, 100 - memory];
+            memoryChart.update();
+
+            // Disk Chart aktualisieren
+            diskChart.data.datasets[0].data = [disk, 100 - disk];
+            diskChart.update();
+        }
+
+        // WebSocket-Verbindung zu Flask-Backend
+        const socket = io();  // Verbindet sich mit dem Backend, das auf Port 5000 läuft
+
+        // Empfange Systemmetriken und aktualisiere die Charts und das UI
+        socket.on('update_metrics', (data) => {
+            console.log("Received system metrics:", data); // Debugging
+            updateCharts(data.cpu_usage, data.memory_usage, data.disk_usage);
+
+            // Aktualisiere die System-Info-Liste
+            const systemInfoList = document.getElementById('system-info');
+            systemInfoList.innerHTML = `
+                <li class="list-group-item">CPU Frequenz: ${data.cpu_frequency} MHz</li>
+                <li class="list-group-item">CPU Kerne: ${data.cpu_cores}</li>
+                <li class="list-group-item">CPU Nutzung: ${data.cpu_usage}%</li>
+                <li class="list-group-item">GPU Nutzung: ${data.gpu_usage}</li>
+                <li class="list-group-item">GPU Speicher genutzt: ${data.gpu_memory_used}</li>
+                <li class="list-group-item">GPU Gesamtspeicher: ${data.gpu_memory_total}</li>
+                <li class="list-group-item">Power Nutzung: ${data.power_usage}%</li>
+                <li class="list-group-item">Gesamtspeicher: ${(data.memory_total / (1024 ** 3)).toFixed(2)} GB</li>
+                <li class="list-group-item">Gesamtdisk: ${(data.disk_total / (1024 ** 3)).toFixed(2)} GB</li>
+            `;
+        });
+
+        // Empfange neue Netzwerkpakete und zeige sie an
+        socket.on('new_network_request', (request) => {
+            const networkRequestsList = document.getElementById('network-requests');
+            networkRequestsList.innerHTML = `
+                <tr>
+                    <td>${request.ip}</td>
+                    <td>${request.country}</td>
+                    <td>${request.summary}</td>
+                    <td>${request.blacklisted}</td>
+                    <td>${request.attacks || 0}</td>
+                </tr>` + networkRequestsList.innerHTML;
+        });
+
+        // Empfange neue Logs und zeige sie an
+        socket.on('new_log', (log) => {
+            const logList = document.getElementById('log-list');
+            logList.innerHTML = `<tr><td>${log.timestamp}</td><td>${log.log}</td></tr>` + logList.innerHTML;
+        });
+
+        // Funktion zum Senden von Nachrichten an den Server
+        function sendMessage() {
+            const message = document.getElementById('chat-input').value;
+            if (message) {
+                document.getElementById('chat-box').innerHTML += `<div><strong>Du:</strong> ${message}</div>`;
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const reply = data.response || "Keine Antwort erhalten.";
+                    document.getElementById('chat-box').innerHTML += `<div><strong>AI:</strong> ${reply}</div>`;
+                    document.getElementById('chat-box').scrollTop = document.getElementById('chat-box').scrollHeight;
+                })
+                .catch(error => {
+                    console.error("Fehler bei der AI-Anfrage:", error);
+                    document.getElementById('chat-box').innerHTML += `<div><strong>AI:</strong> Fehler bei der Anfrage.</div>`;
+                });
+                document.getElementById('chat-input').value = '';
+            }
+        }
+
+
+        // Netzwerk-Anfragen anzeigen
+        let currentNetworkPage = 1;
+
+        function fetchNetworkRequests(page = 1) {
+            fetch(`/network-requests?page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    const networkRequestsList = document.getElementById('network-requests');
+                    networkRequestsList.innerHTML = '';
+                    data.forEach(request => {
+                        networkRequestsList.innerHTML += `
+                            <tr>
+                                <td>${request.ip}</td>
+                                <td>${request.country}</td>
+                                <td>${request.summary}</td>
+                                <td>${request.blacklisted}</td>
+                                <td>${request.attacks || 0}</td>
+                            </tr>`;
+                    });
+                })
+                .catch(error => console.error("Fehler beim Abrufen der Netzwerk-Anfragen:", error));
+        }
+
+        document.getElementById('network-prev').addEventListener('click', () => {
+            if (currentNetworkPage > 1) {
+                currentNetworkPage--;
+                fetchNetworkRequests(currentNetworkPage);
+            }
+        });
+
+        document.getElementById('network-next').addEventListener('click', () => {
+            currentNetworkPage++;
+            fetchNetworkRequests(currentNetworkPage);
+        });
+
+        // Logs anzeigen
+        let currentLogsPage = 1;
+
+        function fetchLogs(page = 1) {
+            fetch(`/logs?page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    const logList = document.getElementById('log-list');
+                    logList.innerHTML = '';
+                    data.forEach(log => {
+                        logList.innerHTML += `<tr><td>${log.timestamp}</td><td>${log.log}</td></tr>`;
+                    });
+                })
+                .catch(error => console.error("Fehler beim Abrufen der Logs:", error));
+        }
+
+        document.getElementById('logs-prev').addEventListener('click', () => {
+            if (currentLogsPage > 1) {
+                currentLogsPage--;
+                fetchLogs(currentLogsPage);
+            }
+        });
+
+        document.getElementById('logs-next').addEventListener('click', () => {
+            currentLogsPage++;
+            fetchLogs(currentLogsPage);
+        });
+
+        // KI-Benachrichtigung über Logs
+        function fetchLogsAndUpdate() {
+            fetchLogs(currentLogsPage);
+        }
+
+        
+        function fetchAndDisplayRecentLogs() {
+            fetch('/get_recent_logs')
+                .then(response => response.json())
+                .then(logs => {
+                    const chatBox = document.getElementById('chat-box');
+                    logs.forEach(log => {
+                        const message = `<div><strong>${log.source}:</strong> ${log.message} (Severity: ${log.severity})</div>`;
+                        chatBox.innerHTML += message;
+                    });
+                    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom of the chat box
+                })
+                .catch(error => console.error('Error fetching recent logs:', error));
+        }
+
+
+
+
+        // Systemmetriken anzeigen
+        function fetchSystemInfo() {
+            fetch('/system-info')
+                .then(response => response.json())
+                .then(data => {
+                    const systemInfoList = document.getElementById('system-info');
+                    systemInfoList.innerHTML = '';
+                    if (data.error) {
+                        systemInfoList.innerHTML = `<li class="list-group-item text-danger">${data.error}</li>`;
+                    } else {
+                        systemInfoList.innerHTML = `
+                            <li class="list-group-item">CPU Frequenz: ${data.cpu_frequency} MHz</li>
+                            <li class="list-group-item">CPU Kerne: ${data.cpu_cores}</li>
+                            <li class="list-group-item">CPU Nutzung: ${data.cpu_usage}%</li>
+                            <li class="list-group-item">GPU Nutzung: ${data.gpu_usage}</li>
+                            <li class="list-group-item">GPU Speicher genutzt: ${data.gpu_memory_used}</li>
+                            <li class="list-group-item">GPU Gesamtspeicher: ${data.gpu_memory_total}</li>
+                            <li class="list-group-item">Power Nutzung: ${data.power_usage}%</li>
+                            <li class="list-group-item">Gesamtspeicher: ${(data.memory_total / (1024 ** 3)).toFixed(2)} GB</li>
+                            <li class="list-group-item">Gesamtdisk: ${(data.disk_total / (1024 ** 3)).toFixed(2)} GB</li>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error("Fehler beim Abrufen der Systeminformationen:", error);
+                    document.getElementById('system-info').innerHTML = `<li class="list-group-item text-danger">Fehler beim Abrufen der Systeminformationen</li>`;
+                });
+        }
+
+        function fetchServerMetrics() {
+            fetch('/server-status')
+                .then(response => response.json())
+                .then(data => {
+                    updateCharts(data.cpu_usage, data.memory_usage, data.disk_usage);
+                });
+        }
+
+        // Initiale Daten laden
+        fetchSystemInfo();
+        fetchNetworkRequests(currentNetworkPage);
+        fetchLogs(currentLogsPage);
+        
+
+        // Periodische Updates für Metriken, Netzwerk und Logs
+        setInterval(fetchServerMetrics, 5000); // Alle 5 Sekunden
+        setInterval(() => fetchNetworkRequests(currentNetworkPage), 5000); // Alle 5 Sekunden
+        setInterval(() => fetchLogs(currentLogsPage), 5000); // Alle 5 Sekunden
+        setInterval(fetchSystemInfo, 5000); // Alle 5 Sekunden
+        // Call this function to update the chat periodically or in response to a user command
+        setInterval(fetchAndDisplayRecentLogs, 30000); // Update every 30 seconds
+    </script>
+</body>
+</html>
