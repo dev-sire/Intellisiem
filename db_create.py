@@ -5,11 +5,9 @@ import os
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'system_metrics.db')
 
 def create_database():
-    # Verbindung zur SQLite-Datenbank herstellen
     conn = sqlite3.connect(DATABASE_PATH)
     cursor = conn.cursor()
 
-    # Tabelle metrics erstellen
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS metrics (
             timestamp TEXT,
@@ -20,7 +18,6 @@ def create_database():
         )
     ''')
 
-    # Tabelle logs erstellen
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS logs (
             timestamp TEXT,
@@ -28,7 +25,6 @@ def create_database():
         )
     ''')
 
-    # Tabelle users erstellen
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,7 +33,6 @@ def create_database():
         )
     ''')
 
-    # Änderungen speichern und Verbindung schließen
     conn.commit()
     conn.close()
     print(f"Datenbank und Tabellen wurden erfolgreich in '{DATABASE_PATH}' erstellt.")

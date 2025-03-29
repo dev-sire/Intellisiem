@@ -1,0 +1,10 @@
+Flask
+tensorflow
+numpy
+psutil
+scapy
+requests
+transformers
+GPUtil
+flask_socketio
+eventlet

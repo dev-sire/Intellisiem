@@ -1,5 +1,3 @@
-# ollama_lib.py
-
 import json
 import requests
 
@@ -9,26 +7,26 @@ class OllamaClient:
 
     def chat(self, model, messages, tools=None):
         """
-        Führt einen Chat-Aufruf mit Tool-Unterstützung durch.
-        
-        :param model: Der zu verwendende Modellname.
-        :param messages: Nachrichten für das Gespräch im Chat.
-        :param tools: Eine Liste von Tools für die Tool-Calls.
-        :return: Die Antwort der API.
+        Executes a chat call with tool support.
+
+        :param model: The model name to use.
+        :param messages: Messages for the conversation in the chat.
+        :param tools: A list of tools for tool calls.
+        :return: The API response.
         """
         url = f"{self.base_url}/v1/chat/completions"
         payload = {
             "model": model,
             "messages": messages
         }
-        
+
         if tools:
             payload["tools"] = tools
 
         headers = {"Content-Type": "application/json"}
-        response = requests.post(url, data=json.dumps(payload), headers=headers)
-
-        if response.status_code == 200:
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers, timeout=10) #added timeout.
+            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
             return response.json()
-        else:
-            raise Exception(f"Fehler bei der LLM-Anfrage: {response.status_code} - {response.text}")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error in LLM request: {e}")

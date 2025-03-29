@@ -1,5 +1,5 @@
 
-![SIEM GROQ](screenshot.png)
+![SIEM GROQ](demo.png)
 
 In my latest project, I developed an **AI-powered, real-time Security Information and Event Management (SIEM) system**. Leveraging **Convolutional Neural Networks (CNN)**, **Natural Language Processing (NLP)**, and advanced infrastructure components, this system provides a robust security solution that detects, analyzes, and responds to threats in real-time.
 
@@ -34,7 +34,7 @@ This project is an AI-powered Security Information and Event Management (SIEM) s
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/Keyvanhardani/AI-Driven-SIEM-Realtime-Operator-with-Groq-Integration.git
+   git clone https://github.com/dev-sire/Intellisiem.git
    cd AI-Driven-SIEM-Operator
    ```
 
