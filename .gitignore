@@ -53,6 +53,8 @@ coverage.xml
 .pytest_cache/
 cover/
 config.py
+system_metrics.db
+system_metrics.db-journal
 
 # Translations
 *.mo

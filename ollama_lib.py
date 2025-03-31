@@ -25,8 +25,23 @@ class OllamaClient:
 
         headers = {"Content-Type": "application/json"}
         try:
-            response = requests.post(url, data=json.dumps(payload), headers=headers, timeout=10) #added timeout.
-            response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+            response = requests.post(url, data=json.dumps(payload), headers=headers, timeout=10)
+            response.raise_for_status()
             return response.json()
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error in LLM request: {e}")
+
+    def generate(self, model="llama2", prompt="Say hello"):
+        """Generates text from a prompt."""
+        url = f"{self.base_url}/v1/generate"
+        payload = {
+            "model": model,
+            "prompt": prompt,
+        }
+        headers = {"Content-Type": "application/json"}
+        try:
+            response = requests.post(url, data=json.dumps(payload), headers=headers, timeout=10)
+            response.raise_for_status()
+            return response.json().get("response") #get the response from the JSON
         except requests.exceptions.RequestException as e:
             raise Exception(f"Error in LLM request: {e}")
