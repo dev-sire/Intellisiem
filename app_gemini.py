@@ -19,13 +19,11 @@ from huggingface_hub import hf_hub_download
 from flask_socketio import SocketIO, emit
 import time
 import eventlet
-from config import GROQ_API_KEY, HF_TOKEN
+import google.generativeai as genai
+from config import GEMINI_API_KEY, HF_TOKEN # Assuming HF_TOKEN is in config.py
 
-# Groq API Key und Header
-GROQ_HEADERS = {
-    "Authorization": f"Bearer {GROQ_API_KEY}",
-    "Content-Type": "application/json"
-}
+# Configure Gemini SDK
+genai.configure(api_key=GEMINI_API_KEY)
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -181,7 +179,7 @@ def analyze_packet_with_cnn(packet_data):
     prediction = model.predict(np.array([packet_data]))[0]
     return "suspicious" if prediction[1] > 0.5 else "normal"
 
-# Function that regularly transmits system metrics, logs, and network packets to the frontend client and Groq
+# Function that regularly transmits system metrics, logs, and network packets to the frontend client and Gemini
 def send_system_metrics():
     while True:
         cpu_usage = psutil.cpu_percent()
@@ -207,23 +205,29 @@ def send_system_metrics():
         logs = fetch_recent_logs()
         network_data = fetch_recent_network_data()
 
-        # Groq API request
-        payload = {
-            "model": "llama3-8b-8192",  # The model can be adjusted here
-            "messages": [
-                {"role": "system", "content": f"System Metrics: CPU: {cpu_usage}%, RAM: {memory_usage}%, Disk: {disk_usage}%."},
-                {"role": "user", "content": f"Logs: {logs}, Network: {network_data}"}
-            ]
-        }
+        # Construct the prompt for Gemini
+        prompt = (
+            f"System Metrics: CPU: {cpu_usage}%, RAM: {memory_usage}%, Disk: {disk_usage}%.\n\n"
+            f"Logs: {logs}\n\n"
+            f"Network Data: {network_data}\n\n"
+            "Analyze the provided system data and provide insights."
+        )
 
         try:
-            # Groq API request
-            response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=GROQ_HEADERS, json=payload)
-            response_data = response.json()
-            assistant_message = response_data.get("choices", [{}])[0].get("message", {}).get("content", "No response")
+            # Initialize Gemini model
+            model = genai.GenerativeModel('gemini-pro')
+            # Make the request to the Gemini API
+            response = model.generate_content(prompt)
+            assistant_message = response.text
             save_log(f"AI Response: {assistant_message}")
-        except requests.RequestException as e:
-            print(f"Error in request to Groq: {e}")
+            # Emit the AI's response to the connected client (optional, if this was intended for system analysis updates)
+            # socketio.emit('new_message', {'message': assistant_message})
+        except Exception as e: # Be more specific with exception handling if possible
+            print(f"Error in request to Gemini: {e}")
+            assistant_message = f"Error in request to Gemini: {e}" # Or a default error message
+            save_log(f"AI Response (Error): {assistant_message}")
+            # socketio.emit('new_message', {'message': assistant_message})
+
 
         time.sleep(5)
 
@@ -389,16 +393,9 @@ def extract_ip_from_message(message):
     match = re.search(ip_pattern, message)
     return match.group(0) if match else None
 
-def initialize_groq_client():
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    return headers
-
-# Function to integrate the Groq chat functionality
-@app.route('/chat', methods=['POST'])
-def chat_with_groq():
+# Function to integrate the Gemini chat functionality
+@app.route('/chat_gemini', methods=['POST'])
+def chat_with_gemini():
     data = request.get_json()
     user_message = data.get('message', '')
 
@@ -416,18 +413,18 @@ def chat_with_groq():
         "Please respond briefly and concisely."
     )
 
-    payload = {
-        "model": "llama3-8b-8192",
-        "messages": [{"role": "user", "content": context_message}]
-    }
-
     try:
-        response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=GROQ_HEADERS, json=payload)
-        response_data = response.json()
-        assistant_message = response_data.get("choices", [{}])[0].get("message", {}).get("content", "No response")
-    except requests.RequestException as e:
-        print("Error in request to Groq:", e)
-        assistant_message = f"Error in request to Groq: {e}"
+        # Initialize Gemini model
+        model = genai.GenerativeModel('gemini-pro')
+
+        # Make the request to the Gemini API
+        response = model.generate_content(context_message) # context_message already prepared
+        assistant_message = response.text
+        save_log(f"AI Response: {assistant_message}")
+    except Exception as e: # Be more specific with exception handling if possible
+        print(f"Error in request to Gemini: {e}")
+        assistant_message = f"Error in request to Gemini: {e}"
+        save_log(f"AI Response (Error): {assistant_message}")
 
     save_log(f"User: {user_message}, AI: {assistant_message}")
     return jsonify({"response": assistant_message})

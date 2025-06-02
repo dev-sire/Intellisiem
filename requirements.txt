@@ -8,3 +8,4 @@ transformers
 GPUtil
 flask_socketio
 eventlet
+google-generativeai
